@@ -26,24 +26,24 @@
         justify-content: center;
         align-items: center;
         margin-top: 40px;
-        gap: 0px;
       }
 
       .reel-box {
-        width: 250px;
+        width: 450px; /* 寬度增加以容納更多內容 */
         height: 80px;
         border-radius: 10px;
-        font-size: 50px;
+        font-size: 40px; /* 字體大小調整 */
         font-weight: bold;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #333;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        padding: 0 10px;
+        padding: 0 20px;
         box-sizing: border-box;
+        text-align: center; /* 確保文字在中間 */
       }
-
+      
       button {
         margin: 10px;
         padding: 15px 30px;
@@ -119,8 +119,7 @@
     <h1>2</h1>
 
     <div class="slot-machine-wrapper">
-      <div id="areaReel" class="reel-box">--</div>
-      <div id="numberReel" class="reel-box">--</div>
+      <div id="mainReel" class="reel-box">--</div>
     </div>
     <br />
     <br />
@@ -133,7 +132,6 @@
     <audio id="finishSound" src="002.mp3" preload="auto"></audio>
 
     <button id="drawButton" onclick="startDraw()">開始抽選</button>
-    <button id="retryNumberButton" onclick="retryNumber()" disabled>重抽目前編號</button>
     <button id="resetHistoryButton" onclick="resetHistory()">清除紀錄</button>
     <button id="restartButton" onclick="restartAll()">🔄 重新開始</button>
 
@@ -146,7 +144,7 @@
       let areaNames = [];
       let areaMap = {};
       let drawnMap = {};
-      let lastSelectedArea = null;
+      let lastDrawnResult = null; // 記錄上次抽中的完整結果
 
       const spinSound = document.getElementById('spinSound');
       const finishSound = document.getElementById('finishSound');
@@ -223,166 +221,74 @@
        */
       function startDraw() {
         document.getElementById('drawButton').disabled = true;
-        document.getElementById('retryNumberButton').disabled = true;
         document.getElementById('result').innerHTML = '';
-        document.getElementById('areaReel').innerText = '--';
-        document.getElementById('numberReel').innerText = '--';
+        document.getElementById('mainReel').innerText = '--';
         
         playSpinSound();
-        spinAreaFirst();
+        spinReel();
       }
 
       /**
-       * 轉動區域輪盤。
+       * 轉動主要輪盤。
        */
-      function spinAreaFirst() {
-        const availableRealAreas = areaNames.filter(area => {
-          const areaNumbers = areaMap[area];
-          if (!areaNumbers || areaNumbers.length === 0) {
-            return false;
-          }
-          if (areaNumbers.length === 1 && areaNumbers[0] === '區') {
-            return !drawnMap[area] || !drawnMap[area].includes('區');
-          }
-          if (!drawnMap[area]) return true;
-          return drawnMap[area].length < areaNumbers.length;
+      function spinReel() {
+        let availableResults = [];
+        // 從 areaMap 遍歷所有可能的結果，並過濾已抽出的
+        areaNames.forEach(area => {
+          const numbers = areaMap[area];
+          if (!numbers) return;
+          numbers.forEach(number => {
+            if (!drawnMap[area] || !drawnMap[area].includes(number)) {
+              availableResults.push(`${area} ${number}`);
+            }
+          });
         });
 
-        if (availableRealAreas.length === 0) {
-          alert("所有真實區域的編號都抽完了，請按「重新開始」重新抽選！");
+        if (availableResults.length === 0) {
+          alert("所有編號都抽完了，請按「重新開始」重新抽選！");
           document.getElementById('drawButton').disabled = false;
           stopSpinSound();
           return;
         }
 
-        const areaReel = document.getElementById('areaReel');
+        const mainReel = document.getElementById('mainReel');
         let spinDuration = 2000 + Math.random() * 1000;
         let start = null;
 
         function animate(time) {
           if (!start) start = time;
           const progress = time - start;
-          const i = Math.floor(progress / 80) % areaListA.length;
-          areaReel.innerText = areaListA[i];
+          const i = Math.floor(progress / 80) % availableResults.length;
+          mainReel.innerText = availableResults[i];
 
           if (progress < spinDuration) {
             requestAnimationFrame(animate);
           } else {
-            const finalArea = availableRealAreas[Math.floor(Math.random() * availableRealAreas.length)];
-            areaReel.innerText = finalArea;
-            lastSelectedArea = finalArea;
-
-            stopSpinSound();
-            spinNumber(finalArea);
-          }
-        }
-        requestAnimationFrame(animate);
-      }
-
-      /**
-       * 轉動編號輪盤。
-       */
-      function spinNumber(area) {
-        const allNumbersWithSuffix = areaMap[area];
-        const numberReel = document.getElementById('numberReel');
-
-        if (!allNumbersWithSuffix || allNumbersWithSuffix.length === 0 || (allNumbersWithSuffix.length === 1 && allNumbersWithSuffix[0] === '區')) {
-          const displayValue = (allNumbersWithSuffix && allNumbersWithSuffix[0] === '區') ? '區' : '--';
-          numberReel.innerText = displayValue;
-
-          if (!drawnMap[area]) drawnMap[area] = [];
-          if (!drawnMap[area].includes('區')) {
-            drawnMap[area].push('區');
-          }
-          
-          document.getElementById('history').innerHTML += `<div>🔹 <b>${area}</b> (區)</div>`;
-          const historyDiv = document.getElementById('history');
-          historyDiv.scrollTop = historyDiv.scrollHeight;
-
-          document.getElementById('drawButton').disabled = false;
-          document.getElementById('retryNumberButton').disabled = true;
-          stopSpinSound();
-          return;
-        }
-
-        if (!drawnMap[area]) drawnMap[area] = [];
-        const remainingNumbersWithSuffix = allNumbersWithSuffix.filter(n => !drawnMap[area].includes(n));
-
-        if (remainingNumbersWithSuffix.length === 0) {
-          numberReel.innerText = '已抽完';
-          document.getElementById('result').innerHTML = `⚠️ <b>${area}</b> 的編號已全部抽完，此區域將不再參與抽選。`;
-          document.getElementById('drawButton').disabled = false;
-          document.getElementById('retryNumberButton').disabled = true;
-          stopSpinSound();
-          return;
-        }
-
-        playSpinSound();
-        let spinDuration = 2000 + Math.random() * 1000;
-        let start = null;
-
-        function animate(time) {
-          if (!start) start = time;
-          const progress = time - start;
-          const i = Math.floor(progress / 80) % remainingNumbersWithSuffix.length;
-          numberReel.innerText = remainingNumbersWithSuffix[i];
-
-          if (progress < spinDuration) {
-            requestAnimationFrame(animate);
-          } else {
-            const finalNumberWithSuffix = remainingNumbersWithSuffix[Math.floor(Math.random() * remainingNumbersWithSuffix.length)];
+            const finalResult = availableResults[Math.floor(Math.random() * availableResults.length)];
             
-            numberReel.innerText = finalNumberWithSuffix;
-            drawnMap[area].push(finalNumberWithSuffix);
+            mainReel.innerText = finalResult;
+            lastDrawnResult = finalResult;
 
-            document.getElementById('history').innerHTML += `<div>🔹 <b>${area}</b> <b>${finalNumberWithSuffix}</b></div>`;
+            // 將結果儲存到 drawnMap
+            const [area, ...numberParts] = finalResult.split(' ');
+            const number = numberParts.join(' ');
+            if (!drawnMap[area]) {
+                drawnMap[area] = [];
+            }
+            drawnMap[area].push(number);
+
+            document.getElementById('history').innerHTML += `<div>🔹 <b>${finalResult}</b></div>`;
             const historyDiv = document.getElementById('history');
             historyDiv.scrollTop = historyDiv.scrollHeight;
 
             document.getElementById('drawButton').disabled = false;
-            document.getElementById('retryNumberButton').disabled = false;
             stopSpinSound();
             playFinishSound(9, 2);
           }
         }
         requestAnimationFrame(animate);
       }
-
-      /**
-       * 重抽目前編號。
-       */
-      function retryNumber() {
-        if (!lastSelectedArea) {
-          alert("請先抽出一個區域！");
-          return;
-        }
-        const areaNumbers = areaMap[lastSelectedArea];
-        if (!areaNumbers || areaNumbers.length === 0 || (areaNumbers.length === 1 && areaNumbers[0] === '區')) {
-            alert("此單位沒有編號可供重抽。");
-            return;
-        }
-
-        document.getElementById('result').innerHTML = '';
-        document.getElementById('numberReel').innerText = '--';
-        document.getElementById('drawButton').disabled = true;
-        document.getElementById('retryNumberButton').disabled = true;
-
-        if (drawnMap[lastSelectedArea] && drawnMap[lastSelectedArea].length > 0) {
-          const lastDrawn = drawnMap[lastSelectedArea].pop();
-          console.log(`重抽：將 ${lastSelectedArea} 的 ${lastDrawn} 從已抽記錄中移除。`);
-          
-          const historyDiv = document.getElementById('history');
-          if (historyDiv.lastElementChild && historyDiv.lastElementChild.tagName === 'DIV') {
-            historyDiv.removeChild(historyDiv.lastElementChild);
-          }
-        }
-        if (finishSound) {
-          finishSound.pause();
-          finishSound.currentTime = 0;
-        }
-        spinNumber(lastSelectedArea);
-      }
-
+      
       /**
        * 清除歷史紀錄。
        */
@@ -395,13 +301,11 @@
        */
       function restartAll() {
         drawnMap = {};
-        lastSelectedArea = null;
-        document.getElementById('areaReel').innerText = '--';
-        document.getElementById('numberReel').innerText = '--';
+        lastDrawnResult = null;
+        document.getElementById('mainReel').innerText = '--';
         document.getElementById('result').innerHTML = '';
         document.getElementById('history').innerHTML = '<strong>🎯 抽選紀錄：</strong>';
         document.getElementById('drawButton').disabled = false;
-        document.getElementById('retryNumberButton').disabled = true;
         alert("所有資料已重置，重新開始抽選！");
         stopSpinSound();
         if (finishSound) {
