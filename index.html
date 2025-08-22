@@ -1,197 +1,335 @@
-<script>
-  // 從 Google 試算表載入的資料
-  let areaListA = [];
-  let areaNames = [];
-  let areaMap = {};
-  let drawnMap = {};
-  let lastDrawnResult = null;
-
-  const spinSound = document.getElementById('spinSound');
-  const finishSound = document.getElementById('finishSound');
-
-  // =================================== 載入資料與洗牌函式 ===================================
-
-  /**
-   * 洗牌函式（Fisher-Yates shuffle）。
-   * @param {Array} array - 要打亂的陣列。
-   */
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
-
-  /**
-   * 從 Google 試算表的 Apps Script 讀取抽獎資料並打亂名單。
-   */
-  async function loadDataFromGoogleSheet() {
-    const url = 'https://script.google.com/macros/s/AKfycbwrbfpDXGDH7x70OdXkNNZ05ux3eJocrXVDouYbVQBakHa8uVnNwY42KJmG2cV257CFFg/exec'; // 在這裡貼上你的 URL
-    
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-image: url('003.png');
+        background-size: cover;
+        background-position: top center;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        text-align: center;
+        padding: 50px;
       }
-      const data = await response.json();
-      
-      areaListA = data.areaListA;
-      areaNames = data.areaNames;
-      areaMap = data.areaMap;
-      
-      // ------------------------------------- 新增的洗牌邏輯 -------------------------------------
-      // 1. 打亂區域名稱列表
-      shuffleArray(areaNames);
+      #spinSound, #finishSound {
+        display: none;
+      }
 
-      // 2. 打亂每個區域內的編號列表
-      for (const area in areaMap) {
-        if (areaMap.hasOwnProperty(area)) {
-          shuffleArray(areaMap[area]);
+      h1, h4 {
+        color: rgba(0, 0, 0, 0);
+      }
+
+      .slot-machine-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 40px;
+      }
+
+      .reel-box {
+        width: 450px;
+        height: 80px;
+        border-radius: 10px;
+        font-size: 40px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #333;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        padding: 0 20px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+      
+      button {
+        margin: 10px;
+        padding: 15px 30px;
+        font-size: 16px;
+        font-weight: bold;
+        background-color: #ff9900;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #e68a00;
+      }
+
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+
+      #resetHistoryButton {
+        background-color: #666;
+      }
+      #resetHistoryButton:hover {
+        background-color: #555;
+      }
+
+      #restartButton {
+        background-color: #0066cc;
+      }
+      #restartButton:hover {
+        background-color: #005bb5;
+      }
+
+      #result {
+        margin-top: 30px;
+        font-size: 18px;
+        color: #333;
+        font-weight: bold;
+      }
+
+      #result b {
+        color: #003366;
+      }
+
+      #history {
+        margin-top: 40px;
+        text-align: left;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        min-height: 100px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        max-height: 250px;
+      }
+
+      #history div {
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>1</h1>
+    <h1>2</h1>
+    <h1>2</h1>
+    <h1>2</h1>
+
+    <div class="slot-machine-wrapper">
+      <div id="mainReel" class="reel-box">--</div>
+    </div>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <audio id="spinSound" src="002.mp3" preload="auto"></audio>
+    <audio id="finishSound" src="002.mp3" preload="auto"></audio>
+
+    <button id="drawButton" onclick="startDraw()">開始抽選</button>
+    <button id="resetHistoryButton" onclick="resetHistory()">清除紀錄</button>
+    <button id="restartButton" onclick="restartAll()">🔄 重新開始</button>
+
+    <div id="result"></div>
+    <div id="history"><strong>🎯 抽選紀錄：</strong></div>
+
+    <script>
+      // 從 Google 試算表載入的資料
+      let areaListA = [];
+      let areaNames = [];
+      let areaMap = {};
+      let drawnMap = {};
+      let lastDrawnResult = null;
+
+      const spinSound = document.getElementById('spinSound');
+      const finishSound = document.getElementById('finishSound');
+
+      // =================================== 載入資料與洗牌函式 ===================================
+
+      /**
+       * 洗牌函式（Fisher-Yates shuffle）。
+       * @param {Array} array - 要打亂的陣列。
+       */
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
         }
       }
-      console.log('資料已成功從 Google 試算表載入並打亂。');
-      // --------------------------------------------------------------------------------------
-    } catch (error) {
-      console.error('載入資料失敗:', error);
-      alert('載入抽獎名單失敗，請檢查網頁應用程式 URL 是否正確，或試算表資料格式是否有誤。');
-    }
-  }
 
-  window.onload = () => {
-    loadDataFromGoogleSheet();
-  };
-  // =================================== 載入資料與洗牌函式結束 ===================================
-
-  /**
-   * 播放轉動音效。
-   */
-  function playSpinSound() {
-    if (spinSound) {
-      spinSound.currentTime = 0;
-      spinSound.play().catch(e => console.log("轉動音頻播放失敗:", e));
-    }
-  }
-
-  /**
-   * 停止轉動音效。
-   */
-  function stopSpinSound() {
-    if (spinSound) {
-      spinSound.pause();
-      spinSound.currentTime = 0;
-    }
-  }
-
-  /**
-   * 播放結束音效的特定區段。
-   * @param {number} startTime - 音效開始播放的秒數。
-   * @param {number} duration - 音效持續播放的秒數。
-   */
-  function playFinishSound(startTime, duration) {
-    if (finishSound) {
-      finishSound.currentTime = startTime;
-      finishSound.play().catch(e => console.log("結束音頻播放失敗:", e));
-
-      setTimeout(() => {
-        finishSound.pause();
-        finishSound.currentTime = 0;
-      }, duration * 1000);
-    }
-  }
-
-  /**
-   * 開始抽選流程。
-   */
-  function startDraw() {
-    document.getElementById('drawButton').disabled = true;
-    document.getElementById('result').innerHTML = '';
-    document.getElementById('mainReel').innerText = '--';
-    
-    playSpinSound();
-    spinReel();
-  }
-
-  /**
-   * 轉動主要輪盤。
-   */
-  function spinReel() {
-    let availableResults = [];
-    areaNames.forEach(area => {
-      const numbers = areaMap[area];
-      if (!numbers) return;
-      numbers.forEach(number => {
-        if (!drawnMap[area] || !drawnMap[area].includes(number)) {
-          availableResults.push(`${area} ${number}`);
-        }
-      });
-    });
-
-    if (availableResults.length === 0) {
-      alert("所有編號都抽完了，請按「重新開始」重新抽選！");
-      document.getElementById('drawButton').disabled = false;
-      stopSpinSound();
-      return;
-    }
-
-    const mainReel = document.getElementById('mainReel');
-    let spinDuration = 2000 + Math.random() * 1000;
-    let start = null;
-
-    function animate(time) {
-      if (!start) start = time;
-      const progress = time - start;
-      const i = Math.floor(progress / 80) % availableResults.length;
-      mainReel.innerText = availableResults[i];
-
-      if (progress < spinDuration) {
-        requestAnimationFrame(animate);
-      } else {
-        const finalResult = availableResults[Math.floor(Math.random() * availableResults.length)];
+      /**
+       * 從 Google 試算表的 Apps Script 讀取抽獎資料並打亂名單。
+       */
+      async function loadDataFromGoogleSheet() {
+        const url = 'https://script.google.com/macros/s/AKfycbwrbfpDXGDH7x70OdXkNNZ05ux3eJocrXVDouYbVQBakHa8uVnNwY42KJmG2cV257CFFg/exec';
         
-        mainReel.innerText = finalResult;
-        lastDrawnResult = finalResult;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+          }
+          const data = await response.json();
+          
+          areaListA = data.areaListA;
+          areaNames = data.areaNames;
+          areaMap = data.areaMap;
+          
+          shuffleArray(areaNames);
 
-        const [area, ...numberParts] = finalResult.split(' ');
-        const number = numberParts.join(' ');
-        if (!drawnMap[area]) {
-            drawnMap[area] = [];
+          for (const area in areaMap) {
+            if (areaMap.hasOwnProperty(area)) {
+              shuffleArray(areaMap[area]);
+            }
+          }
+          console.log('資料已成功從 Google 試算表載入並打亂。');
+        } catch (error) {
+          console.error('載入資料失敗:', error);
+          alert('載入抽獎名單失敗，請檢查網頁應用程式 URL 是否正確，或試算表資料格式是否有誤。');
         }
-        drawnMap[area].push(number);
-
-        document.getElementById('history').innerHTML += `<div>🔹 <b>${finalResult}</b></div>`;
-        const historyDiv = document.getElementById('history');
-        historyDiv.scrollTop = historyDiv.scrollHeight;
-
-        document.getElementById('drawButton').disabled = false;
-        stopSpinSound();
-        playFinishSound(9, 2);
       }
-    }
-    requestAnimationFrame(animate);
-  }
-  
-  /**
-   * 清除歷史紀錄。
-   */
-  function resetHistory() {
-    document.getElementById('history').innerHTML = '<strong>🎯 抽選紀錄：</strong>';
-  }
 
-  /**
-   * 重置所有抽獎資料，重新開始。
-   */
-  function restartAll() {
-    drawnMap = {};
-    lastDrawnResult = null;
-    document.getElementById('mainReel').innerText = '--';
-    document.getElementById('result').innerHTML = '';
-    document.getElementById('history').innerHTML = '<strong>🎯 抽選紀錄：</strong>';
-    document.getElementById('drawButton').disabled = false;
-    alert("所有資料已重置，重新開始抽選！");
-    stopSpinSound();
-    if (finishSound) {
-      finishSound.pause();
-      finishSound.currentTime = 0;
-    }
-  }
-</script>
+      window.onload = () => {
+        loadDataFromGoogleSheet();
+      };
+      // =================================== 載入資料與洗牌函式結束 ===================================
+
+      /**
+       * 播放轉動音效。
+       */
+      function playSpinSound() {
+        if (spinSound) {
+          spinSound.currentTime = 0;
+          spinSound.play().catch(e => console.log("轉動音頻播放失敗:", e));
+        }
+      }
+
+      /**
+       * 停止轉動音效。
+       */
+      function stopSpinSound() {
+        if (spinSound) {
+          spinSound.pause();
+          spinSound.currentTime = 0;
+        }
+      }
+
+      /**
+       * 播放結束音效的特定區段。
+       * @param {number} startTime - 音效開始播放的秒數。
+       * @param {number} duration - 音效持續播放的秒數。
+       */
+      function playFinishSound(startTime, duration) {
+        if (finishSound) {
+          finishSound.currentTime = startTime;
+          finishSound.play().catch(e => console.log("結束音頻播放失敗:", e));
+
+          setTimeout(() => {
+            finishSound.pause();
+            finishSound.currentTime = 0;
+          }, duration * 1000);
+        }
+      }
+
+      /**
+       * 開始抽選流程。
+       */
+      function startDraw() {
+        document.getElementById('drawButton').disabled = true;
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('mainReel').innerText = '--';
+        
+        playSpinSound();
+        spinReel();
+      }
+
+      /**
+       * 轉動主要輪盤。
+       */
+      function spinReel() {
+        let availableResults = [];
+        areaNames.forEach(area => {
+          const numbers = areaMap[area];
+          if (!numbers) return;
+          numbers.forEach(number => {
+            if (!drawnMap[area] || !drawnMap[area].includes(number)) {
+              availableResults.push(`${area} ${number}`);
+            }
+          });
+        });
+
+        if (availableResults.length === 0) {
+          alert("所有編號都抽完了，請按「重新開始」重新抽選！");
+          document.getElementById('drawButton').disabled = false;
+          stopSpinSound();
+          return;
+        }
+
+        const mainReel = document.getElementById('mainReel');
+        let spinDuration = 2000 + Math.random() * 1000;
+        let start = null;
+
+        function animate(time) {
+          if (!start) start = time;
+          const progress = time - start;
+          const i = Math.floor(progress / 80) % availableResults.length;
+          mainReel.innerText = availableResults[i];
+
+          if (progress < spinDuration) {
+            requestAnimationFrame(animate);
+          } else {
+            const finalResult = availableResults[Math.floor(Math.random() * availableResults.length)];
+            
+            mainReel.innerText = finalResult;
+            lastDrawnResult = finalResult;
+
+            const [area, ...numberParts] = finalResult.split(' ');
+            const number = numberParts.join(' ');
+            if (!drawnMap[area]) {
+                drawnMap[area] = [];
+            }
+            drawnMap[area].push(number);
+
+            document.getElementById('history').innerHTML += `<div>🔹 <b>${finalResult}</b></div>`;
+            const historyDiv = document.getElementById('history');
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+
+            document.getElementById('drawButton').disabled = false;
+            stopSpinSound();
+            playFinishSound(9, 2);
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+      
+      /**
+       * 清除歷史紀錄。
+       */
+      function resetHistory() {
+        document.getElementById('history').innerHTML = '<strong>🎯 抽選紀錄：</strong>';
+      }
+
+      /**
+       * 重置所有抽獎資料，重新開始。
+       */
+      function restartAll() {
+        drawnMap = {};
+        lastDrawnResult = null;
+        document.getElementById('mainReel').innerText = '--';
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('history').innerHTML = '<strong>🎯 抽選紀錄：</strong>';
+        document.getElementById('drawButton').disabled = false;
+        alert("所有資料已重置，重新開始抽選！");
+        stopSpinSound();
+        if (finishSound) {
+          finishSound.pause();
+          finishSound.currentTime = 0;
+        }
+      }
+    </script>
+  </body>
+</html>
