@@ -224,6 +224,12 @@
         </div>
     </div>
 
+    <!-- 音效元素 (隱藏) -->
+    <!-- 轉動音效 (Loop 循環播放) -->
+    <audio id="spinSound" src="002.mp3" loop preload="auto"></audio>
+    <!-- 結束/成功音效 (較長，用於選取特定片段) -->
+    <audio id="finishSound" src="002.mp3" preload="auto"></audio>
+
     <script>
         // 隨機選取器邏輯
         const SPREADSHEET_ID = '1BgOdR7cQzFpKYPim5sxIo3eC2JN5CWOtfg-oYdd_3EQ';
@@ -231,6 +237,63 @@
             '名單一': '921041441',
             '名單二': '824754110'
         };
+        
+        // ===========================================
+        // 獲取音效元素及功能模組
+        // ===========================================
+        const spinSound = document.getElementById('spinSound');
+        const finishSound = document.getElementById('finishSound');
+
+        /**
+         * 播放轉動/持續音效。
+         */
+        function playSpinSound() {
+            if (spinSound) {
+                spinSound.currentTime = 0; // 重置到開頭
+                // 使用 .catch 處理瀏覽器可能禁止自動播放的問題
+                spinSound.play().catch(e => console.log("轉動音頻播放失敗:", e));
+            }
+        }
+
+        /**
+         * 停止轉動音效。
+         */
+        function stopSpinSound() {
+            if (spinSound) {
+                spinSound.pause(); // 暫停播放
+                spinSound.currentTime = 0; // 重置到開頭
+            }
+        }
+
+        /**
+         * 播放結束音效的特定區段。
+         * @param {number} startTime - 音效開始播放的秒數 (例如 9)。
+         * @param {number} duration - 音效持續播放的秒數 (例如 2)。
+         */
+        function playFinishSound(startTime, duration) {
+            if (finishSound) {
+                finishSound.currentTime = startTime; // 設定播放起點 (秒)
+                finishSound.play().catch(e => console.log("結束音頻播放失敗:", e));
+
+                // 設定在指定秒數後停止播放
+                setTimeout(() => {
+                    finishSound.pause();
+                    finishSound.currentTime = 0; // 重置到開頭
+                }, duration * 1000); // 轉換為毫秒
+            }
+        }
+
+        /**
+         * 停止所有音效（用於重新開始或重設）。
+         */
+        function stopAllSounds() {
+            stopSpinSound();
+            if (finishSound) {
+                finishSound.pause();
+                finishSound.currentTime = 0;
+            }
+        }
+        // ===========================================
         
         // 取得彈出視窗元素
         const modalContainer = document.getElementById('modalContainer');
@@ -332,6 +395,9 @@
                 messageDiv.textContent = '';
             }
             
+            // 步驟 1: 播放轉動音效
+            playSpinSound(); 
+
             let count = 0;
             const originalData = allData[currentGid];
             const pickingInterval = setInterval(() => {
@@ -347,14 +413,20 @@
                     clearInterval(pickingInterval);
                     isPicking = false;
                     
+                    // 步驟 2: 停止轉動音效
+                    stopSpinSound();
+
                     // 確定最終結果從尚未抽出的名單 (teamsData) 中選取
                     const finalIndex = Math.floor(Math.random() * teamsData.length);
                     const finalItem = teamsData[finalIndex];
                     
                     resultBox.textContent = finalItem;
                     
+                    // 步驟 3: 播放結束音效 (從第 9 秒開始播 2 秒)
+                    playFinishSound(9, 2); 
+                    
                     if (messageDiv) {
-                        messageDiv.textContent = '';
+                        messageDiv.textContent = '🎉 抽出: ' + finalItem + ' 🎉';
                     }
                     drawHistory.push(finalItem);
                     teamsData.splice(finalIndex, 1); // 將已抽出的從名單中移除
@@ -373,6 +445,9 @@
         }
 
         function clearHistory() {
+            // 步驟 4: 清除紀錄時停止所有音效
+            stopAllSounds(); 
+
             drawHistory = [];
             renderHistory();
             updateList(); // 重載名單
@@ -401,6 +476,7 @@
     </script>
 </body>
 </html>
+
 
 
 
