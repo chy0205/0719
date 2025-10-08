@@ -16,104 +16,182 @@
       #spinSound, #finishSound {
         display: none;
       }
+        /* --------------------------------- */
+        /* 彈出視窗 (Modal) 樣式 */
+        /* --------------------------------- */
+        .modal {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* 更深的遮罩 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-      h1, h4 {
-        color: rgba(0, 0, 0, 0);
-      }
+        .modal-content {
+            background-color: #fefefe;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
 
-      .slot-machine-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 40px;
-      }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .modal-button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
 
-      .reel-box {
-        width: 450px;
-        height: 80px;
-        border-radius: 10px;
-        font-size: 40px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #333;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        padding: 0 20px;
-        box-sizing: border-box;
-        text-align: center;
-      }
-      
-      button {
-        margin: 10px;
-        padding: 15px 30px;
-        font-size: 16px;
-        font-weight: bold;
-        background-color: #ff9900;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
+        .modal-button {
+            background-color: #ef4444; /* 紅色 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 4px #b91c1c; /* 立體效果 */
+        }
 
-      button:hover {
-        background-color: #e68a00;
-      }
+        .modal-button:hover {
+            background-color: #dc2626;
+        }
+        
+        .modal-button:active {
+            box-shadow: 0 2px #b91c1c;
+            transform: translate(0, 2px);
+        }
+        
+        /* --------------------------------- */
+        /* 抽獎結果顯示框 */
+        /* --------------------------------- */
+        .result-box {
+            position: absolute;
+            top: 36%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem; /* 字體放大 */
+            font-weight: 700;
+            color: #4b5563;
+            border: none;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* --------------------------------- */
+        /* 主要按鈕組 */
+        /* --------------------------------- */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            z-index: 20;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 0px); 
+        }
+        
+        .button {
+            background-color: #d1d5db;
+            color: #1f2937;
+            font-weight: 700;
+            padding: 0.75rem 2rem;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
 
-      button:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-      }
+        .button:hover {
+            background-color: #9ca3af;
+        }
 
-      #resetHistoryButton {
-        background-color: #666;
-      }
-      #resetHistoryButton:hover {
-        background-color: #555;
-      }
+        .button:active {
+            transform: scale(0.98);
+        }
 
-      #restartButton {
-        background-color: #0066cc;
-      }
-      #restartButton:hover {
-        background-color: #005bb5;
-      }
+        .message {
+            font-size: 1.25rem;
+            font-weight: 700;
+            min-height: 2rem;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            z-index: 20;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 70px);
+        }
 
-      #result {
-        margin-top: 30px;
-        font-size: 18px;
-        color: #333;
-        font-weight: bold;
-      }
+        /* --------------------------------- */
+        /* 抽獎紀錄區塊 */
+        /* --------------------------------- */
+        .history-container {
+            width: 350px;
+            padding: 1rem;
+            text-align: left;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 20;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 140px);
+        }
+        
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
 
-      #result b {
-        color: #003366;
-      }
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 100px;
+            overflow-y: auto;
+        }
 
-      #history {
-        margin-top: 40px;
-        text-align: left;
-        max-width: 400px;
-        margin-left: auto;
-        margin-right: auto;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #ccc;
-        min-height: 100px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        overflow-y: auto;
-        max-height: 250px;
-      }
+        .history-item {
+            padding: 0.25rem 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.9rem;
+            color: #374151;
+        }
 
-      #history div {
-        margin-bottom: 5px;
-      }
+        .history-item:last-child {
+            border-bottom: none;
+        }
     </style>
-  </head>
+</head>
 <body>
-    <!-- 彈出視窗區塊 -->
+    <!-- 彈出視窗區塊 (恢復) -->
     <div id="modalContainer" class="modal">
         <div class="modal-content">
             <h2 class="text-2xl font-bold">請選擇要使用的名單：</h2>
@@ -154,6 +232,7 @@
             '名單二': '824754110'
         };
         
+        // 取得彈出視窗元素
         const modalContainer = document.getElementById('modalContainer');
         const selectList1Btn = document.getElementById('selectList1Btn');
         const selectList2Btn = document.getElementById('selectList2Btn');
@@ -181,14 +260,16 @@
                 
                 const response = await fetch(TEAMS_SHEET_URL);
                 const text = await response.text();
+                
+                // 處理 JSONP 格式
                 const jsonText = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
                 const data = JSON.parse(jsonText);
 
                 const parsedData = data.table.rows.map(row => {
                     if (row.c.length > 1 && row.c[1] && row.c[1].v) {
-                        return `${row.c[0].v}: ${row.c[1].v}`;
+                        return `${row.c[0].v}: ${row.c[1].v}`; // 組合: 姓名
                     } else if (row.c[0] && row.c[0].v) {
-                        return row.c[0].v;
+                        return row.c[0].v; // 只有姓名/組別名
                     }
                     return null;
                 }).filter(item => item !== null);
@@ -198,7 +279,9 @@
 
             } catch (error) {
                 console.error('載入姓名資料失敗:', error);
-                messageDiv.textContent = '載入資料失敗。請檢查您的試算表網址和權限設定。';
+                if (messageDiv) {
+                    messageDiv.textContent = '載入資料失敗。請檢查您的試算表網址和權限設定。';
+                }
                 return [];
             }
         }
@@ -252,6 +335,7 @@
             let count = 0;
             const originalData = allData[currentGid];
             const pickingInterval = setInterval(() => {
+                // 隨機抽選資料，但不影響 teamsData (抽過的會從 teamsData 移除)
                 const randomIndex = Math.floor(Math.random() * originalData.length);
                 const item = originalData[randomIndex];
                 
@@ -262,6 +346,8 @@
                 if (count > 30) {
                     clearInterval(pickingInterval);
                     isPicking = false;
+                    
+                    // 確定最終結果從尚未抽出的名單 (teamsData) 中選取
                     const finalIndex = Math.floor(Math.random() * teamsData.length);
                     const finalItem = teamsData[finalIndex];
                     
@@ -271,7 +357,7 @@
                         messageDiv.textContent = '';
                     }
                     drawHistory.push(finalItem);
-                    teamsData.splice(finalIndex, 1);
+                    teamsData.splice(finalIndex, 1); // 將已抽出的從名單中移除
                     renderHistory();
                     
                     if (teamsData.length > 0) {
@@ -289,26 +375,28 @@
         function clearHistory() {
             drawHistory = [];
             renderHistory();
-            updateList();
+            updateList(); // 重載名單
             if (messageDiv) {
                 messageDiv.textContent = '紀錄已清除，名單已重置。';
             }
+        }
+        
+        function handleListSelection(listName) {
+            currentGid = GIDS[listName];
+            modalContainer.style.display = 'none'; // 隱藏視窗
+            updateList();
         }
 
         pickBtn.addEventListener('click', startPicking);
         clearHistoryBtn.addEventListener('click', clearHistory);
 
-        // 初始化彈出視窗和名單載入
-        selectList1Btn.addEventListener('click', () => {
-            currentGid = GIDS['名單一'];
-            modalContainer.style.display = 'none';
-            updateList();
-        });
+        // 名單選擇事件監聽
+        selectList1Btn.addEventListener('click', () => handleListSelection('名單一'));
+        selectList2Btn.addEventListener('click', () => handleListSelection('名單二'));
 
-        selectList2Btn.addEventListener('click', () => {
-            currentGid = GIDS['名單二'];
-            modalContainer.style.display = 'none';
-            updateList();
+        // 頁面載入時：顯示彈出視窗
+        document.addEventListener('DOMContentLoaded', () => {
+             modalContainer.style.display = 'flex';
         });
     </script>
 </body>
